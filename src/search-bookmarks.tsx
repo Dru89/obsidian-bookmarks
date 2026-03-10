@@ -105,9 +105,21 @@ function BookmarkItem({
   ].filter(Boolean);
   const subtitle = subtitleParts.join(" · ");
 
-  // Break the URL into searchable parts: full URL, hostname, and
-  // individual domain segments (e.g. "confluence" from "confluence.disney.com")
+  // Break the URL into searchable parts so queries like "confluence"
+  // match "confluence.disney.com". We include:
+  //   - the full domain as-is
+  //   - each domain segment individually
+  //   - URL path segments (without query params)
   const domainParts = domain.split(".").filter((p) => p.length > 1);
+  let pathParts: string[] = [];
+  try {
+    const urlPath = new URL(bookmark.url).pathname;
+    pathParts = urlPath
+      .split("/")
+      .filter((p) => p.length > 1 && !/^\d+$/.test(p));
+  } catch {
+    // ignore invalid URLs
+  }
 
   return (
     <List.Item
@@ -116,9 +128,9 @@ function BookmarkItem({
       subtitle={subtitle}
       accessories={accessories}
       keywords={[
-        bookmark.url,
         domain,
         ...domainParts,
+        ...pathParts,
         ...bookmark.tags,
         bookmark.author || "",
         bookmark.noteType || "",

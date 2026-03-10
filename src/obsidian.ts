@@ -44,6 +44,25 @@ function extractTags(raw: unknown): string[] {
 }
 
 /**
+ * Extract author from frontmatter. Handles:
+ *   author: "Name"
+ *   author:\n  - "Name"
+ *   author:\n  - "[[Name]]"   (Obsidian wikilinks)
+ */
+function extractAuthor(raw: unknown): string | undefined {
+  if (!raw) return undefined;
+  let value: string;
+  if (Array.isArray(raw)) {
+    value = raw.map(String).join(", ");
+  } else {
+    value = String(raw);
+  }
+  // Strip Obsidian wikilink syntax: [[Name]] -> Name, [[path|Name]] -> Name
+  value = value.replace(/\[\[([^\]|]*\|)?([^\]]+)\]\]/g, "$2");
+  return value.trim() || undefined;
+}
+
+/**
  * Parse a single markdown file into a Bookmark, or null if it has no URL.
  */
 function parseObsidianFile(filePath: string): Bookmark | null {
@@ -71,7 +90,7 @@ function parseObsidianFile(filePath: string): Bookmark | null {
 
   const tags = extractTags(data.tags);
   const noteType = (data.type as string) || "";
-  const author = (data.author as string) || undefined;
+  const author = extractAuthor(data.author);
   const created = data.created ? String(data.created) : undefined;
   const description = (data.description as string) || undefined;
 
@@ -177,7 +196,7 @@ export function indexObsidianBookmarks(
       url: "", // no known URL for these
       source: "obsidian",
       tags,
-      author: (data.author as string) || undefined,
+      author: extractAuthor(data.author),
       created: data.created ? String(data.created) : undefined,
       noteType: (data.type as string) || "",
       filePath,
@@ -258,7 +277,7 @@ export function fullTextSearch(
       url: resolvedUrl,
       source: "obsidian",
       tags,
-      author: (data.author as string) || undefined,
+      author: extractAuthor(data.author),
       created: data.created ? String(data.created) : undefined,
       noteType: (data.type as string) || "",
       filePath,
