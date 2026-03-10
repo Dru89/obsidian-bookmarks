@@ -1,0 +1,90 @@
+{
+  "name": "obsidian-bookmarks",
+  "title": "Obsidian Bookmarks",
+  "description": "Search, browse, and add bookmarks stored in your Obsidian vault. Also searches Chrome and Safari bookmarks.",
+  "icon": "icon.png",
+  "author": "dru89",
+  "platforms": ["macOS"],
+  "categories": ["Productivity", "Web"],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "search-bookmarks",
+      "title": "Search Bookmarks",
+      "description": "Search through your Obsidian bookmarks, Chrome bookmarks, and Safari bookmarks",
+      "mode": "view"
+    },
+    {
+      "name": "add-bookmark",
+      "title": "Add Bookmark",
+      "description": "Quickly add a new bookmark to your Obsidian vault",
+      "mode": "view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "vaultPath",
+      "title": "Obsidian Vault Path",
+      "description": "Path to your Obsidian vault",
+      "type": "directory",
+      "required": true
+    },
+    {
+      "name": "searchFolders",
+      "title": "Search Folders",
+      "description": "Comma-separated list of folders to search within the vault (e.g. Highlights,Weblinks). Leave empty to search the entire vault.",
+      "type": "textfield",
+      "required": false,
+      "default": "Highlights,Weblinks",
+      "placeholder": "Highlights,Weblinks"
+    },
+    {
+      "name": "newBookmarkFolder",
+      "title": "New Bookmark Folder",
+      "description": "Folder within the vault where new bookmarks are saved",
+      "type": "textfield",
+      "required": false,
+      "default": "Weblinks",
+      "placeholder": "Weblinks"
+    },
+    {
+      "name": "enableChrome",
+      "title": "Browser Bookmarks",
+      "description": "Include Chrome bookmarks in search results",
+      "type": "checkbox",
+      "required": false,
+      "default": true,
+      "label": "Search Chrome Bookmarks"
+    },
+    {
+      "name": "enableSafari",
+      "title": "",
+      "description": "Include Safari bookmarks in search results",
+      "type": "checkbox",
+      "required": false,
+      "default": true,
+      "label": "Search Safari Bookmarks"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.93.3",
+    "@raycast/utils": "^1.19.1",
+    "gray-matter": "^4.0.3"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "22.13.14",
+    "@types/react": "19.0.10",
+    "eslint": "^8.57.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "prepublishOnly": "echo \"Error: no publish\" && exit 1",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}
