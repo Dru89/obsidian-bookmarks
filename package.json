@@ -2,7 +2,7 @@
   "name": "obsidian-bookmarks",
   "title": "Obsidian Bookmarks",
   "description": "Search, browse, and add bookmarks stored in your Obsidian vault. Also searches Chrome and Safari bookmarks.",
-  "icon": "icon.png",
+  "icon": "extension-icon.png",
   "author": "dru89",
   "platforms": ["macOS"],
   "categories": ["Productivity", "Web"],

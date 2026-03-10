@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.png" width="128" height="128" alt="Obsidian Bookmarks icon" />
+  <img src="assets/extension-icon.png" width="128" height="128" alt="Obsidian Bookmarks icon" />
 </p>
 
 # Obsidian Bookmarks
