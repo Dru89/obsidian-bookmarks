@@ -7,6 +7,7 @@ import {
   showToast,
   Toast,
   getPreferenceValues,
+  open,
 } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import { useMemo, useState } from "react";
@@ -32,12 +33,29 @@ async function loadAllBookmarks(): Promise<{
   const metadataBookmarks: Bookmark[] = [...metadataResults];
   const fullTextBookmarks: Bookmark[] = [...fullTextResults];
 
-  // Add browser bookmarks to metadata (they're always "structured" data)
+  // Collect all URLs already in Obsidian so we can deduplicate browser bookmarks
+  const obsidianUrls = new Set<string>();
+  for (const b of metadataResults) {
+    if (b.url) obsidianUrls.add(b.url);
+  }
+  for (const b of fullTextResults) {
+    if (b.url) obsidianUrls.add(b.url);
+  }
+
+  // Add browser bookmarks, skipping any URL already in the vault
   if (prefs.enableChrome) {
-    metadataBookmarks.push(...readChromeBookmarks());
+    for (const b of readChromeBookmarks()) {
+      if (!obsidianUrls.has(b.url)) {
+        metadataBookmarks.push(b);
+      }
+    }
   }
   if (prefs.enableSafari) {
-    metadataBookmarks.push(...readSafariBookmarks());
+    for (const b of readSafariBookmarks()) {
+      if (!obsidianUrls.has(b.url)) {
+        metadataBookmarks.push(b);
+      }
+    }
   }
 
   return { metadataBookmarks, fullTextBookmarks };
@@ -79,9 +97,11 @@ function getDomain(url: string): string {
 function BookmarkItem({
   bookmark,
   onSaveToObsidian,
+  onOpenBrowserBookmark,
 }: {
   bookmark: Bookmark;
   onSaveToObsidian?: (bookmark: Bookmark) => void;
+  onOpenBrowserBookmark?: (bookmark: Bookmark) => void;
 }) {
   const accessories: List.Item.Accessory[] = [];
 
@@ -141,7 +161,15 @@ function BookmarkItem({
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            <Action.OpenInBrowser url={bookmark.url} />
+            {bookmark.source !== "obsidian" && onOpenBrowserBookmark ? (
+              <Action
+                title="Open in Browser"
+                icon={Icon.Globe}
+                onAction={() => onOpenBrowserBookmark(bookmark)}
+              />
+            ) : (
+              <Action.OpenInBrowser url={bookmark.url} />
+            )}
             {bookmark.source === "obsidian" && bookmark.filePath && (
               <Action.Open
                 title="Open in Obsidian"
@@ -211,6 +239,28 @@ export default function SearchBookmarks() {
     }
   }
 
+  async function handleOpenBrowserBookmark(bookmark: Bookmark) {
+    await open(bookmark.url);
+    const prefs = getPreferenceValues<Preferences>();
+    if (prefs.autoSaveOnOpen) {
+      try {
+        createBookmarkFile(prefs, bookmark.title, bookmark.url, []);
+        await showToast({
+          style: Toast.Style.Success,
+          title: "Saved to Obsidian",
+          message: bookmark.title,
+        });
+        revalidate();
+      } catch (error) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Failed to auto-save",
+          message: String(error),
+        });
+      }
+    }
+  }
+
   // Group bookmarks by source for sectioned display
   const obsidianBookmarks = allBookmarks.filter(
     (b) => b.source === "obsidian" && !b.isFullTextMatch,
@@ -251,6 +301,7 @@ export default function SearchBookmarks() {
               key={b.id}
               bookmark={b}
               onSaveToObsidian={handleSaveToObsidian}
+              onOpenBrowserBookmark={handleOpenBrowserBookmark}
             />
           ))}
         </List.Section>
@@ -265,6 +316,7 @@ export default function SearchBookmarks() {
               key={b.id}
               bookmark={b}
               onSaveToObsidian={handleSaveToObsidian}
+              onOpenBrowserBookmark={handleOpenBrowserBookmark}
             />
           ))}
         </List.Section>

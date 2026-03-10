@@ -68,48 +68,72 @@ function chromeTimeToDate(chromeTime: string): string {
   }
 }
 
+/**
+ * Read the Chrome profile's display name from its Preferences file.
+ * Falls back to the directory name if unavailable.
+ */
+function getChromeProfileName(profileDir: string): string {
+  try {
+    const prefsPath = path.join(profileDir, "Preferences");
+    if (!fs.existsSync(prefsPath)) return path.basename(profileDir);
+    const raw = fs.readFileSync(prefsPath, "utf-8");
+    const prefs = JSON.parse(raw) as {
+      profile?: { name?: string };
+    };
+    return prefs.profile?.name || path.basename(profileDir);
+  } catch {
+    return path.basename(profileDir);
+  }
+}
+
 export function readChromeBookmarks(): Bookmark[] {
   const home = os.homedir();
-  // Check for common Chrome profile locations
-  const possiblePaths = [
-    path.join(
-      home,
-      "Library",
-      "Application Support",
-      "Google",
-      "Chrome",
-      "Default",
-      "Bookmarks",
-    ),
-    path.join(
-      home,
-      "Library",
-      "Application Support",
-      "Google",
-      "Chrome",
-      "Profile 1",
-      "Bookmarks",
-    ),
-  ];
+  const chromeDir = path.join(
+    home,
+    "Library",
+    "Application Support",
+    "Google",
+    "Chrome",
+  );
 
-  for (const bookmarksPath of possiblePaths) {
+  let profileDirs: string[];
+  try {
+    profileDirs = fs
+      .readdirSync(chromeDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => path.join(chromeDir, d.name))
+      .filter((d) => fs.existsSync(path.join(d, "Bookmarks")));
+  } catch {
+    return [];
+  }
+
+  const allResults: Bookmark[] = [];
+  const seenUrls = new Set<string>();
+
+  for (const profileDir of profileDirs) {
+    const profileName = getChromeProfileName(profileDir);
+    const bookmarksPath = path.join(profileDir, "Bookmarks");
+
     try {
-      if (!fs.existsSync(bookmarksPath)) continue;
       const raw = fs.readFileSync(bookmarksPath, "utf-8");
       const data = JSON.parse(raw) as ChromeBookmarkFile;
-      const results: Bookmark[] = [];
       for (const root of Object.values(data.roots)) {
         if (root && typeof root === "object") {
-          results.push(...flattenChromeNode(root, ""));
+          const bookmarks = flattenChromeNode(root, profileName);
+          for (const b of bookmarks) {
+            if (!seenUrls.has(b.url)) {
+              seenUrls.add(b.url);
+              allResults.push(b);
+            }
+          }
         }
       }
-      return results;
     } catch {
       continue;
     }
   }
 
-  return [];
+  return allResults;
 }
 
 // ─── Safari ──────────────────────────────────────────────────────────────────

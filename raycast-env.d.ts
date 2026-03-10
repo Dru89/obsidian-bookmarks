@@ -17,7 +17,9 @@ type ExtensionPreferences = {
   /** Browser Bookmarks - Include Chrome bookmarks in search results */
   "enableChrome": boolean,
   /**  - Include Safari bookmarks in search results */
-  "enableSafari": boolean
+  "enableSafari": boolean,
+  /**  - Automatically save browser bookmarks to your Obsidian vault when opened */
+  "autoSaveOnOpen": boolean
 }
 
 /** Preferences accessible in all the extension's commands */

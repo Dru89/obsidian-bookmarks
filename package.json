@@ -64,6 +64,15 @@
       "required": false,
       "default": true,
       "label": "Search Safari Bookmarks"
+    },
+    {
+      "name": "autoSaveOnOpen",
+      "title": "",
+      "description": "Automatically save browser bookmarks to your Obsidian vault when opened",
+      "type": "checkbox",
+      "required": false,
+      "default": false,
+      "label": "Auto-save Browser Bookmarks on Open"
     }
   ],
   "dependencies": {

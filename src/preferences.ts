@@ -6,6 +6,7 @@ export interface Preferences {
   newBookmarkFolder: string;
   enableChrome: boolean;
   enableSafari: boolean;
+  autoSaveOnOpen: boolean;
 }
 
 export function getPreferences(): Preferences {
