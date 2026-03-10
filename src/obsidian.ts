@@ -134,8 +134,11 @@ export function indexObsidianBookmarks(
     }
   }
 
-  // Phase 2: Full-text URL search for files NOT already found
-  const urlRegex = /https?:\/\/[^\s)>\]"']+/g;
+  // Phase 2: Index remaining files for full-text keyword matching.
+  // These files don't have a frontmatter URL, so they won't appear in
+  // the default (unfiltered) list — but Raycast's keyword filtering can
+  // still surface them when the user types a query that matches their
+  // body content, title, tags, etc.
   for (const filePath of allFiles) {
     if (seenPaths.has(filePath)) continue;
 
@@ -146,44 +149,41 @@ export function indexObsidianBookmarks(
       continue;
     }
 
-    // Strip frontmatter before searching body
-    let body = raw;
+    let parsed: matter.GrayMatterFile<string>;
     try {
-      const parsed = matter(raw);
-      body = parsed.content;
+      parsed = matter(raw);
     } catch {
-      // If frontmatter parse fails, search the whole file
+      continue;
     }
 
-    const match = body.match(urlRegex);
-    if (match && match.length > 0) {
-      // Use the first URL found in the body
-      const data = matter(raw).data as Record<string, unknown>;
-      const title = (data.title as string) || path.basename(filePath, ".md");
-      const tags = extractTags(data.tags);
+    const data = parsed.data as Record<string, unknown>;
+    const title = (data.title as string) || path.basename(filePath, ".md");
+    const tags = extractTags(data.tags);
 
-      const bodySnippet = body
-        .replace(/!\[.*?\]\(.*?\)/g, "")
-        .replace(/\[.*?\]\(.*?\)/g, "")
-        .replace(/[#*_~`>]/g, "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 500);
+    const bodySnippet = parsed.content
+      .replace(/!\[.*?\]\(.*?\)/g, "")
+      .replace(/\[.*?\]\(.*?\)/g, "")
+      .replace(/[#*_~`>]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 500);
 
-      fullTextResults.push({
-        id: filePath,
-        title,
-        url: match[0],
-        source: "obsidian",
-        tags,
-        author: (data.author as string) || undefined,
-        created: data.created ? String(data.created) : undefined,
-        noteType: (data.type as string) || "",
-        filePath,
-        isFullTextMatch: true,
-        bodySnippet,
-      });
-    }
+    // Skip files with no useful body content
+    if (!bodySnippet && tags.length === 0) continue;
+
+    fullTextResults.push({
+      id: filePath,
+      title,
+      url: "", // no known URL for these
+      source: "obsidian",
+      tags,
+      author: (data.author as string) || undefined,
+      created: data.created ? String(data.created) : undefined,
+      noteType: (data.type as string) || "",
+      filePath,
+      isFullTextMatch: true,
+      bodySnippet,
+    });
   }
 
   return { metadataResults, fullTextResults };

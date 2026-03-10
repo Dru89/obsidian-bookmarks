@@ -9,7 +9,7 @@ import {
   getPreferenceValues,
 } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Bookmark } from "./types";
 import type { Preferences } from "./preferences";
 import { getSearchFolders } from "./preferences";
@@ -17,10 +17,10 @@ import { indexObsidianBookmarks } from "./obsidian";
 import { readChromeBookmarks, readSafariBookmarks } from "./browsers";
 import { createBookmarkFile } from "./create-bookmark";
 
-function loadAllBookmarks(): {
+async function loadAllBookmarks(): Promise<{
   metadataBookmarks: Bookmark[];
   fullTextBookmarks: Bookmark[];
-} {
+}> {
   const prefs = getPreferenceValues<Preferences>();
   const folders = getSearchFolders(prefs);
 
@@ -140,6 +140,8 @@ function BookmarkItem({
 }
 
 export default function SearchBookmarks() {
+  const [searchText, setSearchText] = useState("");
+
   const { data, isLoading, revalidate } = useCachedPromise(
     loadAllBookmarks,
     [],
@@ -185,11 +187,15 @@ export default function SearchBookmarks() {
   const chromeBookmarks = allBookmarks.filter((b) => b.source === "chrome");
   const safariBookmarks = allBookmarks.filter((b) => b.source === "safari");
 
+  // Only show full-text matches when the user has typed a search query
+  const showFullText = searchText.trim().length > 0;
+
   return (
     <List
       isLoading={isLoading}
       searchBarPlaceholder="Search bookmarks..."
-      filtering
+      filtering={true}
+      onSearchTextChange={setSearchText}
     >
       {obsidianBookmarks.length > 0 && (
         <List.Section
@@ -229,7 +235,7 @@ export default function SearchBookmarks() {
           ))}
         </List.Section>
       )}
-      {fullTextObsidianBookmarks.length > 0 && (
+      {showFullText && fullTextObsidianBookmarks.length > 0 && (
         <List.Section
           title="Full-Text Matches"
           subtitle={`${fullTextObsidianBookmarks.length} additional results`}
