@@ -91,8 +91,18 @@ function parseObsidianFile(filePath: string): Bookmark | null {
   const tags = extractTags(data.tags);
   const noteType = (data.type as string) || "";
   const author = extractAuthor(data.author);
-  const created = data.created ? String(data.created) : undefined;
   const description = (data.description as string) || undefined;
+
+  // Resolve creation date: try frontmatter field, fall back to file birthtime
+  let created = data.created ? String(data.created) : undefined;
+  if (!created) {
+    try {
+      const stat = fs.statSync(filePath);
+      created = stat.birthtime.toISOString().split("T")[0];
+    } catch {
+      // ignore
+    }
+  }
 
   // Extract a snippet of body content for full-text keyword matching
   const bodySnippet = parsed.content
@@ -190,6 +200,16 @@ export function indexObsidianBookmarks(
     // Skip files with no useful body content
     if (!bodySnippet && tags.length === 0) continue;
 
+    let created = data.created ? String(data.created) : undefined;
+    if (!created) {
+      try {
+        const stat = fs.statSync(filePath);
+        created = stat.birthtime.toISOString().split("T")[0];
+      } catch {
+        // ignore
+      }
+    }
+
     fullTextResults.push({
       id: filePath,
       title,
@@ -197,7 +217,7 @@ export function indexObsidianBookmarks(
       source: "obsidian",
       tags,
       author: extractAuthor(data.author),
-      created: data.created ? String(data.created) : undefined,
+      created,
       noteType: (data.type as string) || "",
       filePath,
       isFullTextMatch: true,

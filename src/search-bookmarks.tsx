@@ -94,6 +94,19 @@ function getDomain(url: string): string {
   }
 }
 
+/**
+ * Sort bookmarks by created date, most recent first.
+ * Bookmarks without a date sort to the end.
+ */
+function sortByCreatedDesc(bookmarks: Bookmark[]): Bookmark[] {
+  return [...bookmarks].sort((a, b) => {
+    if (!a.created && !b.created) return 0;
+    if (!a.created) return 1;
+    if (!b.created) return -1;
+    return b.created.localeCompare(a.created);
+  });
+}
+
 function BookmarkItem({
   bookmark,
   onSaveToObsidian,
@@ -261,15 +274,19 @@ export default function SearchBookmarks() {
     }
   }
 
-  // Group bookmarks by source for sectioned display
-  const obsidianBookmarks = allBookmarks.filter(
-    (b) => b.source === "obsidian" && !b.isFullTextMatch,
+  // Group bookmarks by source for sectioned display, sorted by most recent first
+  const obsidianBookmarks = sortByCreatedDesc(
+    allBookmarks.filter((b) => b.source === "obsidian" && !b.isFullTextMatch),
   );
-  const fullTextObsidianBookmarks = allBookmarks.filter(
-    (b) => b.source === "obsidian" && b.isFullTextMatch,
+  const fullTextObsidianBookmarks = sortByCreatedDesc(
+    allBookmarks.filter((b) => b.source === "obsidian" && b.isFullTextMatch),
   );
-  const chromeBookmarks = allBookmarks.filter((b) => b.source === "chrome");
-  const safariBookmarks = allBookmarks.filter((b) => b.source === "safari");
+  const chromeBookmarks = sortByCreatedDesc(
+    allBookmarks.filter((b) => b.source === "chrome"),
+  );
+  const safariBookmarks = sortByCreatedDesc(
+    allBookmarks.filter((b) => b.source === "safari"),
+  );
 
   // Only show full-text matches when the user has typed a search query
   const showFullText = searchText.trim().length > 0;
@@ -278,7 +295,7 @@ export default function SearchBookmarks() {
     <List
       isLoading={isLoading}
       searchBarPlaceholder="Search bookmarks..."
-      filtering={true}
+      filtering={{ keepSectionOrder: true }}
       onSearchTextChange={setSearchText}
     >
       {obsidianBookmarks.length > 0 && (
