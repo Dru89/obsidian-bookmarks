@@ -63,6 +63,19 @@ function extractAuthor(raw: unknown): string | undefined {
 }
 
 /**
+ * Convert a frontmatter date value to a YYYY-MM-DD string.
+ * gray-matter parses bare dates (e.g. `created: 2026-01-22`) as Date objects,
+ * so we need to handle both Date and string types.
+ */
+function toDateString(value: unknown): string | undefined {
+  if (!value) return undefined;
+  if (value instanceof Date) {
+    return value.toISOString().split("T")[0];
+  }
+  return String(value);
+}
+
+/**
  * Parse a single markdown file into a Bookmark, or null if it has no URL.
  */
 function parseObsidianFile(filePath: string): Bookmark | null {
@@ -94,7 +107,7 @@ function parseObsidianFile(filePath: string): Bookmark | null {
   const description = (data.description as string) || undefined;
 
   // Resolve creation date: try frontmatter field, fall back to file birthtime
-  let created = data.created ? String(data.created) : undefined;
+  let created = toDateString(data.created);
   if (!created) {
     try {
       const stat = fs.statSync(filePath);
@@ -200,7 +213,7 @@ export function indexObsidianBookmarks(
     // Skip files with no useful body content
     if (!bodySnippet && tags.length === 0) continue;
 
-    let created = data.created ? String(data.created) : undefined;
+    let created = toDateString(data.created);
     if (!created) {
       try {
         const stat = fs.statSync(filePath);
@@ -298,7 +311,7 @@ export function fullTextSearch(
       source: "obsidian",
       tags,
       author: extractAuthor(data.author),
-      created: data.created ? String(data.created) : undefined,
+      created: toDateString(data.created),
       noteType: (data.type as string) || "",
       filePath,
       isFullTextMatch: true,
