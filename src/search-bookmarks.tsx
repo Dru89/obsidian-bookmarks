@@ -68,6 +68,14 @@ function sourceLabel(source: Bookmark["source"]): string {
   }
 }
 
+function getDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 function BookmarkItem({
   bookmark,
   onSaveToObsidian,
@@ -90,7 +98,16 @@ function BookmarkItem({
     tooltip: sourceLabel(bookmark.source),
   });
 
-  const subtitle = bookmark.author || bookmark.folder || "";
+  const domain = getDomain(bookmark.url);
+  const subtitleParts = [
+    bookmark.author || bookmark.folder || "",
+    domain,
+  ].filter(Boolean);
+  const subtitle = subtitleParts.join(" · ");
+
+  // Break the URL into searchable parts: full URL, hostname, and
+  // individual domain segments (e.g. "confluence" from "confluence.disney.com")
+  const domainParts = domain.split(".").filter((p) => p.length > 1);
 
   return (
     <List.Item
@@ -100,6 +117,8 @@ function BookmarkItem({
       accessories={accessories}
       keywords={[
         bookmark.url,
+        domain,
+        ...domainParts,
         ...bookmark.tags,
         bookmark.author || "",
         bookmark.noteType || "",
@@ -111,15 +130,18 @@ function BookmarkItem({
         <ActionPanel>
           <ActionPanel.Section>
             <Action.OpenInBrowser url={bookmark.url} />
-            <Action.CopyToClipboard title="Copy URL" content={bookmark.url} />
-          </ActionPanel.Section>
-          {bookmark.source === "obsidian" && bookmark.filePath && (
-            <ActionPanel.Section title="Obsidian">
+            {bookmark.source === "obsidian" && bookmark.filePath && (
               <Action.Open
                 title="Open in Obsidian"
                 target={`obsidian://open?path=${encodeURIComponent(bookmark.filePath)}`}
                 icon={Icon.Document}
+                shortcut={{ modifiers: ["cmd"], key: "return" }}
               />
+            )}
+            <Action.CopyToClipboard title="Copy URL" content={bookmark.url} />
+          </ActionPanel.Section>
+          {bookmark.source === "obsidian" && bookmark.filePath && (
+            <ActionPanel.Section title="Obsidian">
               <Action.ShowInFinder path={bookmark.filePath} />
             </ActionPanel.Section>
           )}
