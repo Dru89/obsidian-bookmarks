@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.png" width="128" height="128" alt="Obsidian Bookmarks icon" />
+</p>
+
 # Obsidian Bookmarks
 
 A [Raycast](https://www.raycast.com/) extension for searching and managing bookmarks stored in your [Obsidian](https://obsidian.md/) vault — plus Chrome and Safari bookmarks.

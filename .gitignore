@@ -5,3 +5,6 @@
 
 # Raycast
 .ray
+
+# macOS
+.DS_Store
