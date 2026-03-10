@@ -4,6 +4,7 @@ import {
   Action,
   Icon,
   Color,
+  Image,
   showToast,
   Toast,
   getPreferenceValues,
@@ -61,29 +62,21 @@ async function loadAllBookmarks(): Promise<{
   return { metadataBookmarks, fullTextBookmarks };
 }
 
-function sourceIcon(source: Bookmark["source"]): {
-  source: Icon;
-  tintColor?: Color;
-} {
-  switch (source) {
-    case "obsidian":
-      return { source: Icon.Document, tintColor: Color.Purple };
-    case "chrome":
-      return { source: Icon.Globe, tintColor: Color.Blue };
-    case "safari":
-      return { source: Icon.Globe, tintColor: Color.Orange };
-  }
+const SOURCE_APPS: Record<
+  Bookmark["source"],
+  { bundleId: string; name: string }
+> = {
+  obsidian: { bundleId: "md.obsidian", name: "Obsidian" },
+  chrome: { bundleId: "com.google.Chrome", name: "Chrome" },
+  safari: { bundleId: "com.apple.Safari", name: "Safari" },
+};
+
+function sourceIcon(source: Bookmark["source"]): Image.ImageLike {
+  return { fileIcon: `/Applications/${SOURCE_APPS[source].name}.app` };
 }
 
 function sourceLabel(source: Bookmark["source"]): string {
-  switch (source) {
-    case "obsidian":
-      return "Obsidian";
-    case "chrome":
-      return "Chrome";
-    case "safari":
-      return "Safari";
-  }
+  return SOURCE_APPS[source].name;
 }
 
 function getDomain(url: string): string {
@@ -274,18 +267,12 @@ export default function SearchBookmarks() {
     }
   }
 
-  // Group bookmarks by source for sectioned display, sorted by most recent first
-  const obsidianBookmarks = sortByCreatedDesc(
-    allBookmarks.filter((b) => b.source === "obsidian" && !b.isFullTextMatch),
+  // Single flat list sorted by most recent first, with full-text matches separated
+  const primaryBookmarks = sortByCreatedDesc(
+    allBookmarks.filter((b) => !b.isFullTextMatch),
   );
-  const fullTextObsidianBookmarks = sortByCreatedDesc(
-    allBookmarks.filter((b) => b.source === "obsidian" && b.isFullTextMatch),
-  );
-  const chromeBookmarks = sortByCreatedDesc(
-    allBookmarks.filter((b) => b.source === "chrome"),
-  );
-  const safariBookmarks = sortByCreatedDesc(
-    allBookmarks.filter((b) => b.source === "safari"),
+  const fullTextBookmarksFiltered = sortByCreatedDesc(
+    allBookmarks.filter((b) => b.isFullTextMatch),
   );
 
   // Only show full-text matches when the user has typed a search query
@@ -298,52 +285,29 @@ export default function SearchBookmarks() {
       filtering={{ keepSectionOrder: true }}
       onSearchTextChange={setSearchText}
     >
-      {obsidianBookmarks.length > 0 && (
-        <List.Section
-          title="Obsidian Bookmarks"
-          subtitle={`${obsidianBookmarks.length} bookmarks`}
-        >
-          {obsidianBookmarks.map((b) => (
-            <BookmarkItem key={b.id} bookmark={b} />
-          ))}
-        </List.Section>
-      )}
-      {chromeBookmarks.length > 0 && (
-        <List.Section
-          title="Chrome Bookmarks"
-          subtitle={`${chromeBookmarks.length} bookmarks`}
-        >
-          {chromeBookmarks.map((b) => (
-            <BookmarkItem
-              key={b.id}
-              bookmark={b}
-              onSaveToObsidian={handleSaveToObsidian}
-              onOpenBrowserBookmark={handleOpenBrowserBookmark}
-            />
-          ))}
-        </List.Section>
-      )}
-      {safariBookmarks.length > 0 && (
-        <List.Section
-          title="Safari Bookmarks"
-          subtitle={`${safariBookmarks.length} bookmarks`}
-        >
-          {safariBookmarks.map((b) => (
-            <BookmarkItem
-              key={b.id}
-              bookmark={b}
-              onSaveToObsidian={handleSaveToObsidian}
-              onOpenBrowserBookmark={handleOpenBrowserBookmark}
-            />
-          ))}
-        </List.Section>
-      )}
-      {showFullText && fullTextObsidianBookmarks.length > 0 && (
+      <List.Section
+        title="Bookmarks"
+        subtitle={`${primaryBookmarks.length} bookmarks`}
+      >
+        {primaryBookmarks.map((b) => (
+          <BookmarkItem
+            key={b.id}
+            bookmark={b}
+            onSaveToObsidian={
+              b.source !== "obsidian" ? handleSaveToObsidian : undefined
+            }
+            onOpenBrowserBookmark={
+              b.source !== "obsidian" ? handleOpenBrowserBookmark : undefined
+            }
+          />
+        ))}
+      </List.Section>
+      {showFullText && fullTextBookmarksFiltered.length > 0 && (
         <List.Section
           title="Full-Text Matches"
-          subtitle={`${fullTextObsidianBookmarks.length} additional results`}
+          subtitle={`${fullTextBookmarksFiltered.length} additional results`}
         >
-          {fullTextObsidianBookmarks.map((b) => (
+          {fullTextBookmarksFiltered.map((b) => (
             <BookmarkItem key={b.id} bookmark={b} />
           ))}
         </List.Section>
